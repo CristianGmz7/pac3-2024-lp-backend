@@ -1,9 +1,14 @@
 ﻿using BlogUNAH.API.Database;
+using BlogUNAH.API.Database.Entities;
 using BlogUNAH.API.Helpers;
 using BlogUNAH.API.Services;
 using BlogUNAH.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace BlogUNAH.API
 {
@@ -21,6 +26,7 @@ namespace BlogUNAH.API
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
+            services.AddHttpContextAccessor();
 
             var name = Configuration.GetConnectionString("DefaultConnection");
 
@@ -32,6 +38,34 @@ namespace BlogUNAH.API
             services.AddTransient<ICategoriesService, CategoriesSQLService>();
             services.AddTransient<IAuthService, AuthService>();
             services.AddTransient<IPostsService, PostsService>();
+            services.AddTransient<IAuditService, AuditService>();
+
+            // Add Identity
+            services.AddIdentity<UserEntity, IdentityRole>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = false;
+            }).AddEntityFrameworkStores<BlogUNAHContext>()
+                .AddDefaultTokenProviders();
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = false;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = false,
+                    ValidAudience = Configuration["JWT:ValidAudience"],
+                    ValidIssuer = Configuration["JWT:ValidIssuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),    //llave 
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
 
             // Add AutoMapper
             services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -62,6 +96,8 @@ namespace BlogUNAH.API
             app.UseRouting();
 
             app.UseCors("CorsPolicy");
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

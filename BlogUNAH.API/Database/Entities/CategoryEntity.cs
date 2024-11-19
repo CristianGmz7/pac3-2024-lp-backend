@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BlogUNAH.API.Database.Entities
@@ -19,5 +20,10 @@ namespace BlogUNAH.API.Database.Entities
         public string Description { get; set; }
 
         public virtual IEnumerable<PostEntity> Posts { get; set; }
+
+        //estos campos fueron agregados despues de haber creado el CategoryConfiguration
+        public virtual UserEntity CreatedByUser { get; set; }
+
+        public virtual UserEntity UpdatedByUser { get; set; }
     }
 }
